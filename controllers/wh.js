@@ -2,16 +2,16 @@ const {
   generateSlug,
 } = require('random-word-slugs');
 const UserStates = require('../db/models/Userstate');
-const UserDiscount = require('../db/models/UserDiscount');
+const discounts = require('../db/models/Userstate');
 const msgCtrl = require('./msg');
 
 const storeAPIkey = 'a55e9f8e5d6feebd23752396acd80cc4';
 const storePassword = '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';
 const accessToken = '9d75b9d30a16f02bb9517f2aafd9bd48';
 const storeMyShopify = 'banarasi-outfit.myshopify.com';
-const externalUrl = 'banarasioutfit.in';
+
 const apiVersion = '2021-04';
-const priceRuleId = '942249935042';
+const priceRuleId = '950294741183';
 
 const {
   retireveCollections,
@@ -55,12 +55,12 @@ function handleMessage(req, res) {
     UserStates
       .create({
         phone: fromNumber,
-        last: 'demoMain',
+        last: 'main',
       })
       .then(() => {
         msgCtrl.sendMsg({
           fromNumber,
-          msg: 'Hello! Are your here to receive a discount for Banasari Outfits ?\n1. Yes\n2. No',
+          msg: 'Hello! What do you want?\n1. Catalogue\n2. Customer Support\n3. Order Status',
         });
       }).catch(errorHandler);
   }
@@ -70,7 +70,7 @@ function handleMessage(req, res) {
       response,
     ) => {
       console.log('sendCatalog');
-      const collections = `Select Catalogue:\n${
+      const collections = `Select catalog:\n${
         response.collections.edges
           .map((val, idx) => `${idx + 1}. ${val.node.handle}`)
           .join('\n')}`;
@@ -105,7 +105,7 @@ function handleMessage(req, res) {
       },
       {
         $set: {
-          last: 'support',
+          last: 'tracking',
         },
       },
     );
@@ -114,14 +114,8 @@ function handleMessage(req, res) {
   const getOrderStatus = () => {
     msgCtrl.sendMsg({
       fromNumber,
-      msg: 'Type your tracking number OR email.\n(Demo: copy paste below tracking number)',
+      msg: 'Type your tracking number OR email.',
     });
-    setTimeout(() => {
-      msgCtrl.sendMsg({
-        fromNumber,
-        msg: 'UH037386106US',
-      });
-    }, 3000);
     UserStates.updateOne(
       {
         phone: fromNumber,
@@ -131,7 +125,7 @@ function handleMessage(req, res) {
           last: 'tracking',
         },
       },
-    ).exec();
+    );
   };
 
   function continueDialog(state) {
@@ -140,7 +134,7 @@ function handleMessage(req, res) {
     if (msg.toLowerCase() === 'main') {
       msgCtrl.sendMsg({
         fromNumber,
-        msg: 'Hello! What do you want?\n*1. Catalogue*\n*2. Customer Support*\n*3. Order Status*',
+        msg: 'Hello! What do you want?\n1. Catalogue\n2. Customer Support\n3. Order Status',
       });
       UserStates.updateOne(
         {
@@ -280,7 +274,7 @@ function handleMessage(req, res) {
                 let txt = variants
                   .map((v, idx) => `${idx + 1}. ${v.node.title}`)
                   .join('\n');
-                txt = `Select Variants:\n${txt}`;
+                txt = `Select variants:\n${txt}`;
                 msgCtrl.sendMsg({
                   fromNumber,
                   msg: txt,
@@ -322,7 +316,7 @@ function handleMessage(req, res) {
           title,
         });
       }
-      const txt = 'Your item is placed in cart. What do you want next ?\n1. Continue shopping.\n2. See my cart.\n3. Proceed to payment.';
+      const txt = 'Your item is placed in cart.What do you want next ? \n1.Continue shopping.\n2.See my cart. \n3.Proceed to payment.';
       msgCtrl.sendMsg({
         fromNumber,
         msg: txt,
@@ -351,7 +345,7 @@ function handleMessage(req, res) {
                 ({ title, quantity }, idx) => `${idx + 1}. ${title}: ${quantity}`,
               )
               .join('\n');
-            const txt = `Your cart is:\n${storedLineItemsText}\n\nWhat do you want to do next?\n1. Continue Shopping \n2. Proceed to payment \n3. Delete item`;
+            const txt = `${storedLineItemsText}\n 1.Proceed to payment \n 2. Delete item \n 3.Back`;
             msgCtrl.sendMsg({
               fromNumber,
               msg: txt,
@@ -376,7 +370,7 @@ function handleMessage(req, res) {
             state.storedLineItems,
           )
             .then((createdCheckoutInfo) => {
-              const txt = `Congratulations!\nYour order is almost created.\nPlease, open this url and finish him!\n ${
+              const txt = `Congratulations! \nYour order is almost created.\nPlease, open this url and finish him!\n ${
                 createdCheckoutInfo.checkoutCreate.checkout.webUrl}`;
               msgCtrl.sendMsg({
                 fromNumber,
@@ -398,14 +392,14 @@ function handleMessage(req, res) {
         default: {
           msgCtrl.sendMsg({
             fromNumber,
-            msg: 'Please, send right command',
+            msg: 'Please,send right command',
           });
           break;
         }
       }
     } else if (state.last === 'cart') {
       switch (msg) {
-        case '2': {
+        case '1': {
           createCheckoutList(
             storeMyShopify,
             accessToken,
@@ -432,7 +426,11 @@ function handleMessage(req, res) {
 
           break;
         }
+<<<<<<< HEAD
         case '3': {
+=======
+        case '2': {
+>>>>>>> a8eaf149042fb27acf50be2ccd479ec0d79ad0ff
           const storedLineItemsText = state.storedLineItems
           .filter((x) => x.title && x.quantity)
           .map(({ title, quantity }, idx) => `${idx + 1}. ${title}: ${quantity}`,).join('\n');
@@ -451,20 +449,42 @@ function handleMessage(req, res) {
           },
           errorHandler,
           );
+<<<<<<< HEAD
           break;
         }
         case '1': {
           sendCatalog();
+=======
+            break;
+          }
+        case '3': {
+          const txt = 'Your item is placed in cart.What do you want next ? \n1.Continue shopping.\n2.See my cart. \n3.Proceed to payment.';
+          msgCtrl.sendMsg({
+            fromNumber,
+            msg: txt,
+          });
+          UserStates.updateOne(
+            {
+              phone: fromNumber,
+            },
+            {
+              $set: {
+                last: 'added-to-cart',
+              },
+            },
+          ).exec();
+>>>>>>> a8eaf149042fb27acf50be2ccd479ec0d79ad0ff
           break;
         }
         default: {
           msgCtrl.sendMsg({
             fromNumber,
-            msg: 'Please, send right command',
+            msg: 'Please,send right command',
           });
           break;
         }
       }
+<<<<<<< HEAD
     }else if (state.last === 'deleteItem') {
       if(msg-1 > -1){
         const newList = storedLineItems.splice(msg-1,1);
@@ -527,21 +547,35 @@ function handleMessage(req, res) {
           fromNumber,
           msg: 'Hello! What do you want?\n1. Catalogue\n2. Customer Support\n3. Order Status',
         });
+=======
+    } else if (state.last === 'deleteItem') {
+      if(msg-1 > -1){
+        const newList = storedLineItems.splice(msg-1,1);
+>>>>>>> a8eaf149042fb27acf50be2ccd479ec0d79ad0ff
         UserStates.updateOne(
           {
             phone: fromNumber,
           },
           {
             $set: {
-              last: 'main',
+              last: 'deleteItem',
+              storedLineItems: newList,
             },
           },
         ).exec();
+      } else {
+        // eslint-disable-next-line no-constant-condition
+        console.log("state.last !== 'main'", state);
       }
-    } else {
-      // eslint-disable-next-line no-constant-condition
-      console.log("state.last !== 'main'", state);
-    }
+      }
+      else{
+        msgCtrl.sendMsg({
+          fromNumber,
+          msg: 'Please,send right command',
+        });
+        return;
+      }
+      
   }
 
   if (msg.toLowerCase() === 'discount') {
@@ -556,17 +590,17 @@ function handleMessage(req, res) {
     )
       .then((response) => {
         const { code } = response.data.discount_code;
-        const discountedUrl = `http://${externalUrl}/discount/${code}`;
+        const discountedUrl = `http://${storeMyShopify}/discount/${code}`;
 
-        UserDiscount
-          .create({
+        discounts
+          .insertOne({
             discountCode: discountSlug,
             phone: fromNumber,
           })
           .then(() => {
             msgCtrl.sendMsg({
               fromNumber,
-              msg: `Here is your promocode(click this link): ${discountedUrl}`,
+              msg: `Here is your promocode: ${discountedUrl}`,
             });
           })
           .catch((err) => {
