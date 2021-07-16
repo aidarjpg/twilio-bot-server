@@ -433,13 +433,24 @@ function handleMessage(req, res) {
           break;
         }
         case '3': {
+          const storedLineItemsText = state.storedLineItems
+          .filter((x) => x.title && x.quantity)
+          .map(({ title, quantity }, idx) => `${idx + 1}. ${title}: ${quantity}`,).join('\n');
+          const txt = `${storedLineItemsText}\n Select item that you are gonna delete`;
+          msgCtrl.sendMsg({
+            fromNumber,
+            msg: txt,
+          });
           UserStates.updateOne({
             phone: fromNumber,
-          }, {
+          },
+          {
             $set: {
-              last: 'removeItem',
+              last: 'deleteItem',
             },
-          });
+          },
+          errorHandler,
+          );
           break;
         }
         case '1': {
@@ -454,42 +465,20 @@ function handleMessage(req, res) {
           break;
         }
       }
-    } else if (state.last === 'removeItem') {
-      const storedLineItemsText = state.storedLineItems
-        .filter((x) => x.title && x.quantity)
-        .map(
-          ({ title, quantity }, idx) => `${idx + 1}. ${title}: ${quantity}`,
-        )
-        .join('\n');
-      const txt = `${storedLineItemsText}\nSelect item that you are gonna delete`;
-      msgCtrl.sendMsg({
-        fromNumber,
-        msg: txt,
-      });
-      UserStates.updateOne(
-        {
-          phone: fromNumber,
-        },
-        {
-          $set: {
-            last: 'deleteItem',
+    }else if (state.last === 'deleteItem') {
+      if(msg-1 > -1){
+        const newList = storedLineItems.splice(msg-1,1);
+        UserStates.updateOne(
+          {
+            phone: fromNumber,
           },
-        },
-        errorHandler,
-      );
-    } else if (state.last === 'deleteItem') {
-      const newList = this.storedLineItems.filter((t) => t.variantId === msg);
-      UserStates.updateOne(
-        {
-          phone: fromNumber,
-        },
-        {
-          $set: {
-            last: 'deleteItem',
-            storedLineItems: newList,
+          {
+            $set: {
+              last: 'deleteItem',
+              storedLineItems: newList,
+            },
           },
-        },
-      ).exec();
+        ).exec();
     } else if (state.last === 'demoMain') {
       if (msg === '1') {
         const discountSlug = generateSlug();
