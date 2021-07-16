@@ -427,15 +427,26 @@ function handleMessage(req, res) {
           break;
         }
         case '2': {
+          const storedLineItemsText = state.storedLineItems
+          .filter((x) => x.title && x.quantity)
+          .map(({ title, quantity }, idx) => `${idx + 1}. ${title}: ${quantity}`,).join('\n');
+          const txt = `${storedLineItemsText}\n Select item that you are gonna delete`;
+          msgCtrl.sendMsg({
+            fromNumber,
+            msg: txt,
+          });
           UserStates.updateOne({
             phone: fromNumber,
-          }, {
+          },
+          {
             $set: {
-              last: 'removeItem',
+              last: 'deleteItem',
             },
-          });
-          break;
-        }
+          },
+          errorHandler,
+          );
+            break;
+          }
         case '3': {
           const txt = 'Your item is placed in cart.What do you want next ? \n1.Continue shopping.\n2.See my cart. \n3.Proceed to payment.';
           msgCtrl.sendMsg({
@@ -462,46 +473,33 @@ function handleMessage(req, res) {
           break;
         }
       }
-    } else if (state.last === 'removeItem') {
-      const storedLineItemsText = state.storedLineItems
-        .filter((x) => x.title && x.quantity)
-        .map(
-          ({ title, quantity }, idx) => `${idx + 1}. ${title}: ${quantity}`,
-        )
-        .join('\n');
-      const txt = `${storedLineItemsText}\n Select item that you are gonna delete`;
-      msgCtrl.sendMsg({
-        fromNumber,
-        msg: txt,
-      });
-      UserStates.updateOne(
-        {
-          phone: fromNumber,
-        },
-        {
-          $set: {
-            last: 'deleteItem',
-          },
-        },
-        errorHandler,
-      );
     } else if (state.last === 'deleteItem') {
-      const newList = this.storedLineItems.filter((t) => t.variantId === msg);
-      UserStates.updateOne(
-        {
-          phone: fromNumber,
-        },
-        {
-          $set: {
-            last: 'deleteItem',
-            storedLineItems: newList,
+      if(msg-1 > -1){
+        const newList = storedLineItems.splice(msg-1,1);
+        UserStates.updateOne(
+          {
+            phone: fromNumber,
           },
-        },
-      ).exec();
-    } else {
-      // eslint-disable-next-line no-constant-condition
-      console.log("state.last !== 'main'", state);
-    }
+          {
+            $set: {
+              last: 'deleteItem',
+              storedLineItems: newList,
+            },
+          },
+        ).exec();
+      } else {
+        // eslint-disable-next-line no-constant-condition
+        console.log("state.last !== 'main'", state);
+      }
+      }
+      else{
+        msgCtrl.sendMsg({
+          fromNumber,
+          msg: 'Please,send right command',
+        });
+        return;
+      }
+      
   }
 
   if (msg.toLowerCase() === 'discount') {
